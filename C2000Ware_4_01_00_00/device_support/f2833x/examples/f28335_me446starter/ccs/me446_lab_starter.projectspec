@@ -2,7 +2,7 @@
   <project
         name="me446_lab_starter"
         device="TMS320F28335"
-        cgtVersion="21.6.0.LTS"
+        cgtVersion="22.6.0.LTS"
         launchWizard="False"
         linkerCommandFile=""
         >
