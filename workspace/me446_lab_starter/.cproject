@@ -83,7 +83,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="matlab|F28335.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="me446lab_yer2_justin54.c|matlab|F28335.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="matlab/simulink5ms_plotAndGains_sldrt_win64/tlc"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -173,6 +174,7 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry excluding="matlab|28335_RAM_lnk.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="matlab/simulink5ms_plotAndGains_sldrt_win64/tlc"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -184,4 +186,5 @@
 		<project id="me446_lab_starter.com.ti.ccstudio.buildDefinitions.C2000.ProjectType.460384539" name="C2000" projectType="com.ti.ccstudio.buildDefinitions.C2000.ProjectType"/>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration"/>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>
