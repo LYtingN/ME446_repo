@@ -76,7 +76,9 @@ float Kp2 = 55.0, Kd2 = 5, Ki2 = 500;
 float Kp3 = 55.0, Kd3 = 4, Ki3 = 500;
 float integral1 = 0,integral2 = 0,integral3 = 0;
 float threshold = 0.015;
-
+float J1 = 0.0167, J2=0.03,J3 = 0.0128;
+float theta1_dot_desired = 0, theta2_dot_desired = 0, theta3_dot_desired = 0;
+float theta1_ddot_desired = 0, theta2_ddot_desired = 0, theta3_ddot_desired = 0;
 
 void mains_code(void);
 
@@ -96,19 +98,23 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
 
 
-    if ((mycount%5000)==0){
-        if (theta1_desired>0.25){
-            theta1_desired = 0;
-            theta2_desired = 0;
-            theta3_desired = 0;
-        }
-        else {
-            theta1_desired = 0.5;
-            theta2_desired = 0.5;
-            theta3_desired = 0.5;
-        }
+//    if ((mycount%5000)==0){
+//        if (theta1_desired>0.25){
+//            theta1_desired = 0;
+//            theta2_desired = 0;
+//            theta3_desired = 0;
+//        }
+//        else {
+//            theta1_desired = 0.5;
+//            theta2_desired = 0.5;
+//            theta3_desired = 0.5;
+//        }
+//
+//    }
+    float time_trajectory = (mycount % 2000); // 0 to 2 seconds
 
-    }
+
+
     //Motor torque limitation(Max: 5 Min: -5)
     Omega1_raw = (theta1motor - Theta1_old)/0.001;
     Omega1 = (Omega1_raw + Omega1_old1 + Omega1_old2)/3.0;
@@ -120,8 +126,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     Omega3_raw = (theta3motor - Theta3_old)/0.001;
     Omega3 = (Omega3_raw + Omega3_old1 + Omega3_old2)/3.0;
-
-
+//
+//
     error1 = theta1_desired - theta1motor;
     error2 = theta2_desired - theta2motor;
     error3 = theta3_desired - theta3motor;
@@ -144,10 +150,19 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         integral3 = 0;
     }
 
+    *tau1 = (J1 * theta1_ddot_desired)
+             + (Kp1 * (theta1_desired - theta1motor))
+             + (Kd1 * (theta1_dot_desired - Omega1))
+             + (Ki1 * integral1);
 
-    *tau1 = Kp1 * error1 + Kd1 * (-Omega1) + Ki1 * integral1;
-    *tau2 = Kp2 * error2 + Kd2 * (-Omega2) + Ki2 * integral2;
-    *tau3 = Kp3 * error3 + Kd3 * (-Omega3) + Ki3 * integral3;
+    *tau2 = (J2 * theta2_ddot_desired)
+                     + (Kp2 * (theta2_desired - theta2motor))
+                     + (Kd2 * (theta2_dot_desired - Omega2))
+                     + (Ki2 * integral2);
+    *tau3 = (J3 * theta3_ddot_desired)
+                     + (Kp3 * (theta3_desired - theta3motor))
+                     + (Kd3 * (theta3_dot_desired - Omega3))
+                     + (Ki3 * integral3);
 
     if (*tau1 > 5.0) *tau1 = 5.0;
     if (*tau1 < -5.0) *tau1 = -5.0;
@@ -171,7 +186,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Omega3_old2 = Omega3_old1;
     Omega3_old1 = Omega3;
 
-    timestep++;
+
     // save past states
     if ((mycount%50)==0) {
 
@@ -205,9 +220,9 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     cal_theta1motor = cal_theta1;
     cal_theta2motor = cal_theta2 + PI/2;
     cal_theta3motor = cal_theta3 + cal_theta2;
-    Simulink_PlotVar1 = theta1motor;
-    Simulink_PlotVar2 = theta2motor;
-    Simulink_PlotVar3 = theta3motor;
+    Simulink_PlotVar1 = error1;
+    Simulink_PlotVar2 = error2;
+    Simulink_PlotVar3 = error3;
     Simulink_PlotVar4 = theta1_desired;
 
     mycount++;
