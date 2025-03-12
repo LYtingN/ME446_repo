@@ -45,9 +45,13 @@ float Simulink_PlotVar1 = 0;
 float Simulink_PlotVar2 = 0;
 float Simulink_PlotVar3 = 0;
 float Simulink_PlotVar4 = 0;
-float x_end = 0;
+float x_end = .25;
 float y_end = 0;
-float z_end = 0;
+float z_end = .51;
+float x_print_end = 0;
+float y_print_end = 0;
+float z_print_end = 0;
+
 float theta1_desired = 0;
 float theta2_desired = 0;
 float theta3_desired = 0;
@@ -69,6 +73,7 @@ float Omega3 = 0;
 float error1 = 0;
 float error2 = 0;
 float error3 = 0;
+float time_trajectory = 0;
 
 
 float Kp1 = 55.0, Kd1 = 2.7, Ki1 = 500;
@@ -97,94 +102,68 @@ void main(void)
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
 
 
+    time_trajectory = mycount/1000.0; // 0 to 2 seconds
+    if (time_trajectory < 1.0)
+    {
+        theta1_desired = 0;
+        theta2_desired = 0;
+        theta3_desired = 0;
 
-//    if ((mycount%5000)==0){
-//        if (theta1_desired>0.25){
-//            theta1_desired = 0;
-//            theta2_desired = 0;
-//            theta3_desired = 0;
-//        }
-//        else {
-//            theta1_desired = 0.5;
-//            theta2_desired = 0.5;
-//            theta3_desired = 0.5;
-//        }
-//
-//    }
-    float time_trajectory = (mycount % 2000); // 0 to 2 seconds
-
-
-
+    }
+    else
+    {
+    x_end = 0.4;
+    y_end = 0.05*cos(2*PI*0.25*(time_trajectory-1));
+    z_end = 0.05*sin(2*PI*0.25*(time_trajectory-1))+0.4;
+    sigma1 = sqrt(x_end * x_end + y_end * y_end + (0.254 - z_end) * (0.254 - z_end));
+    theta1_desired = atan2(y_end, x_end);
+    theta2_desired = -(acos((2 * x_end * x_end + 2 * y_end * y_end) / (2 * sqrt(x_end * x_end + y_end * y_end) * sigma1)) + acos((x_end * x_end + y_end * y_end + (0.254 - z_end) * (0.254 - z_end)) / (2 * 0.254 * sigma1)));
+    theta3_desired = acos((x_end * x_end - 2*0.254 * 0.254 + y_end * y_end + (0.254 - z_end) * (0.254 - z_end)) / (2 * 0.254 * 0.254));
+    theta2_desired = theta2_desired + PI/2;
+    theta3_desired = theta3_desired + theta2_desired - PI/2;
+    }
     //Motor torque limitation(Max: 5 Min: -5)
-    Omega1_raw = (theta1motor - Theta1_old)/0.001;
-    Omega1 = (Omega1_raw + Omega1_old1 + Omega1_old2)/3.0;
+        Omega1_raw = (theta1motor - Theta1_old)/0.001;
+        Omega1 = (Omega1_raw + Omega1_old1 + Omega1_old2)/3.0;
 
 
-    Omega2_raw = (theta2motor - Theta2_old)/0.001;
-    Omega2 = (Omega2_raw + Omega2_old1 + Omega2_old2)/3.0;
+        Omega2_raw = (theta2motor - Theta2_old)/0.001;
+        Omega2 = (Omega2_raw + Omega2_old1 + Omega2_old2)/3.0;
 
 
-    Omega3_raw = (theta3motor - Theta3_old)/0.001;
-    Omega3 = (Omega3_raw + Omega3_old1 + Omega3_old2)/3.0;
-//
-//
-    error1 = theta1_desired - theta1motor;
-    error2 = theta2_desired - theta2motor;
-    error3 = theta3_desired - theta3motor;
+        Omega3_raw = (theta3motor - Theta3_old)/0.001;
+        Omega3 = (Omega3_raw + Omega3_old1 + Omega3_old2)/3.0;
 
-    if (fabs(error1) < threshold) {
-        integral1 += (error1 + (theta1_desired - Theta1_old)) * 0.0005; // Trapezoidal rule
-    } else {
-        integral1 = 0;
-    }
 
-    if (fabs(error2) < threshold) {
-        integral2 += (error2 + (theta2_desired - Theta2_old)) * 0.0005;
-    } else {
-        integral2 = 0;
-    }
+        error1 = theta1_desired - theta1motor;
+        error2 = theta2_desired - theta2motor;
+        error3 = theta3_desired - theta3motor;
 
-    if (fabs(error3) < threshold) {
-        integral3 += (error3 + (theta3_desired - Theta3_old)) * 0.0005;
-    } else {
-        integral3 = 0;
-    }
+        *tau1 = Kp1 * error1 + Kd1 * (-Omega1);
+        *tau2 = Kp2 * error2 + Kd2 * (-Omega2);
+        *tau3 = Kp3 * error3 + Kd3 * (-Omega3);
 
-    *tau1 = (J1 * theta1_ddot_desired)
-             + (Kp1 * (theta1_desired - theta1motor))
-             + (Kd1 * (theta1_dot_desired - Omega1))
-             + (Ki1 * integral1);
+        if (*tau1 > 5.0) *tau1 = 5.0;
+        if (*tau1 < -5.0) *tau1 = -5.0;
+        if (*tau2 > 5.0) *tau2 = 5.0;
+        if (*tau2 < -5.0) *tau2 = -5.0;
+        if (*tau3 > 5.0) *tau3 = 5.0;
+        if (*tau3 < -5.0) *tau3 = -5.0;
 
-    *tau2 = (J2 * theta2_ddot_desired)
-                     + (Kp2 * (theta2_desired - theta2motor))
-                     + (Kd2 * (theta2_dot_desired - Omega2))
-                     + (Ki2 * integral2);
-    *tau3 = (J3 * theta3_ddot_desired)
-                     + (Kp3 * (theta3_desired - theta3motor))
-                     + (Kd3 * (theta3_dot_desired - Omega3))
-                     + (Ki3 * integral3);
+        Theta1_old = theta1motor;
+        //order matters here. Why??
+        Omega1_old2 = Omega1_old1;
+        Omega1_old1 = Omega1;
 
-    if (*tau1 > 5.0) *tau1 = 5.0;
-    if (*tau1 < -5.0) *tau1 = -5.0;
-    if (*tau2 > 5.0) *tau2 = 5.0;
-    if (*tau2 < -5.0) *tau2 = -5.0;
-    if (*tau3 > 5.0) *tau3 = 5.0;
-    if (*tau3 < -5.0) *tau3 = -5.0;
+        Theta2_old = theta2motor;
+        //order matters here. Why??
+        Omega2_old2 = Omega1_old2;
+        Omega2_old1 = Omega2;
 
-    Theta1_old = theta1motor;
-    //order matters here. Why??
-    Omega1_old2 = Omega1_old1;
-    Omega1_old1 = Omega1;
-
-    Theta2_old = theta2motor;
-    //order matters here. Why??
-    Omega2_old2 = Omega1_old2;
-    Omega2_old1 = Omega2;
-
-    Theta3_old = theta3motor;
-    //order matters here. Why??
-    Omega3_old2 = Omega3_old1;
-    Omega3_old1 = Omega3;
+        Theta3_old = theta3motor;
+        //order matters here. Why??
+        Omega3_old2 = Omega3_old1;
+        Omega3_old1 = Omega3;
 
 
     // save past states
@@ -206,31 +185,32 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1; // Blink LED on Control Card
         GpioDataRegs.GPBTOGGLE.bit.GPIO60 = 1; // Blink LED on Emergency Stop Box
     }
-
+//
     printtheta1motor = theta1motor;
     printtheta2motor = theta2motor;
     printtheta3motor = theta3motor;
-    x_end = 0.254*cos(theta1motor)*(cos(theta3motor) + sin(theta2motor));
-    y_end = 0.254*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor));
-    z_end = 0.254*cos(theta2motor) - 0.254*sin(theta3motor) + 0.254;
-    sigma1 = sqrt(x_end * x_end + y_end * y_end + (0.254 - z_end) * (0.254 - z_end));
-    cal_theta1 = atan2(y_end, x_end);
-    cal_theta2 = -(acos((2 * x_end * x_end + 2 * y_end * y_end) / (2 * sqrt(x_end * x_end + y_end * y_end) * sigma1)) + acos((x_end * x_end + y_end * y_end + (0.254 - z_end) * (0.254 - z_end)) / (2 * 0.254 * sigma1)));
-    cal_theta3 = acos((x_end * x_end - 2*0.254 * 0.254 + y_end * y_end + (0.254 - z_end) * (0.254 - z_end)) / (2 * 0.254 * 0.254));
-    cal_theta1motor = cal_theta1;
-    cal_theta2motor = cal_theta2 + PI/2;
-    cal_theta3motor = cal_theta3 + cal_theta2;
-    Simulink_PlotVar1 = error1;
-    Simulink_PlotVar2 = error2;
-    Simulink_PlotVar3 = error3;
-    Simulink_PlotVar4 = theta1_desired;
+    x_print_end = 0.254*cos(theta1motor)*(cos(theta3motor) + sin(theta2motor));
+    y_print_end = 0.254*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor));
+    z_print_end = 0.254*cos(theta2motor) - 0.254*sin(theta3motor) + 0.254;
+//    sigma1 = sqrt(x_end * x_end + y_end * y_end + (0.254 - z_end) * (0.254 - z_end));
+//    cal_theta1 = atan2(y_end, x_end);
+//    cal_theta2 = -(acos((2 * x_end * x_end + 2 * y_end * y_end) / (2 * sqrt(x_end * x_end + y_end * y_end) * sigma1)) + acos((x_end * x_end + y_end * y_end + (0.254 - z_end) * (0.254 - z_end)) / (2 * 0.254 * sigma1)));
+//    cal_theta3 = acos((x_end * x_end - 2*0.254 * 0.254 + y_end * y_end + (0.254 - z_end) * (0.254 - z_end)) / (2 * 0.254 * 0.254));
+//    cal_theta1motor = cal_theta1;
+//    cal_theta2motor = cal_theta2 + PI/2;
+//    cal_theta3motor = cal_theta3 + cal_theta2;
+    Simulink_PlotVar1 = x_end;
+    Simulink_PlotVar2 = y_end;
+    Simulink_PlotVar3 = z_end;
+    Simulink_PlotVar4 = 0;
 
     mycount++;
 }
 
 void printing(void){
     if (whattoprint == 0) {
-        serial_printf(&SerialA, "printmotor: %.2f,%.2f,%.2f, position: %.2f,%.2f,%.2f, \n\r cal_motor %.2f,%.2f,%.2f, dh_motor %.2f,%.2f,%.2f \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI,x_end,y_end,z_end,cal_theta1motor*180/PI,cal_theta2motor*180/PI,cal_theta3motor*180/PI,cal_theta1*180/PI,cal_theta2*180/PI,cal_theta3*180/PI);
+//        serial_printf(&SerialA, "position: %.2f,%.2f,%.2f \n\r",x_end,y_end,z_end);
+        serial_printf(&SerialA, "position: %.2f,%.2f,%.2f \n\r",x_print_end,y_print_end,z_print_end);
     } else {
         serial_printf(&SerialA, "whattoprintout   \n\r");
     }
