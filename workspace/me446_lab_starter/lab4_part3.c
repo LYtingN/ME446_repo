@@ -87,7 +87,7 @@ float vel_error3 = 0;
 float Kp1 = 55.0, Kd1 = 2.7, Ki1 = 500; //PID
 float Kp2 = 70.0, Kd2 = 12, Ki2 = 500; //PID
 float Kp3 = 70.0, Kd3 = 12, Ki3 = 500; //PID
-float Kp2i = 1000, Kd2i = 100, Kp3i = 1000, Kd3i = 100; //Gains for Inverse Dynamics
+float Kp2i = 2000, Kd2i = 150, Kp3i = 5000, Kd3i = 150; //Gains for Inverse Dynamics
 float integral1 = 0,integral2 = 0,integral3 = 0; //PI Gains, not used
 float threshold = 0.015; // used for integral deadband
 
@@ -118,67 +118,70 @@ float qd = 0, dot = 0, ddot = 0;
 float qd3 = 0, dot3 = 0, ddot3 = 0;
 
 // Controll Mode Flag Variable
-float  mode = 0;
+float  mode = 1;
+
+float cosq1 = 0;
+float sinq1 = 0;
+float cosq2 = 0;
+float sinq2 = 0;
+float cosq3 = 0;
+float sinq3 = 0;
+float JT_11 = 0;
+float JT_12 = 0;
+float JT_13 = 0;
+float JT_21 = 0;
+float JT_22 = 0;
+float JT_23 = 0;
+float JT_31 = 0;
+float JT_32 = 0;
+float JT_33 = 0;
+float cosz = 0;
+float sinz = 0;
+float cosx = 0;
+float sinx = 0;
+float cosy = 0;
+float siny = 0;
+float thetaz = 0;
+float thetax = 0;
+float thetay = 0;
+float R11 = 0;
+float R12 = 0;
+float R13 = 0;
+float R21 = 0;
+float R22 = 0;
+float R23 = 0;
+float R31 = 0;
+float R32 = 0;
+float R33 = 0;
+float RT11 = 0;
+float RT12 = 0;
+float RT13 = 0;
+float RT21 = 0;
+float RT22 = 0;
+float RT23 = 0;
+float RT31 = 0;
+float RT32 = 0;
+float RT33 = 0;
+
+float Kpx = 300, Kpy = 300, Kpz = 300;
+float Kdx = 20, Kdy = 20, Kdz = 20;
+float Kpxn = 300, Kpyn = 300, Kpzn = 300;
+float Kdxn = 20, Kdyn = 20, Kdzn = 20;
+float Fx = 0, Fy = 0, Fz = 0;
+float Fxn = 0, Fyn = 0, Fzn = 0;
+float x_end_old = 0, y_end_old = 0, z_end_old = 0;
+float velx_raw = 0, vely_raw = 0, velz_raw = 0;
+float velx_old1 = 0, vely_old1 = 0, velz_old1 = 0;
+float velx_old2 = 0, vely_old2 = 0, velz_old2 = 0;
+float velx = 0, vely = 0, velz = 0;
+float xd = 0.25, yd = 0.25, zd = 0.35;
+float velxd = 0, velyd = 0, velzd = 0;
+float Fzcmd = -10;
+float Kt = 6;
+float f_fric = 0.6;
+
 
 void mains_code(void);
-
-// Trajectory Filter
-typedef struct steptraj_s {
-    long double b[5];
-    long double a[5];
-    long double xk[5];
-    long double yk[5];
-    float qd_old;
-    float qddot_old;
-    int size;
-} steptraj_t;
-
-// Filter Coefficients
-steptraj_t trajectory = {1.4781526816424225e-07L,5.9126107265696901e-07L,8.8689160898545357e-07L,5.9126107265696901e-07L,1.4781526816424225e-07L,
-                         1.0000000000000000e+00L,-3.8431372549019605e+00L,5.5386389850057673e+00L,-3.5476249707880076e+00L,8.5212560572849194e-01L,
-                         0,0,0,0,0,
-                         0,0,0,0,0,
-                         0,
-                         0,
-                         5};
-steptraj_t trajectory2 = {1.4781526816424225e-07L,5.9126107265696901e-07L,8.8689160898545357e-07L,5.9126107265696901e-07L,1.4781526816424225e-07L,
-                          1.0000000000000000e+00L,-3.8431372549019605e+00L,5.5386389850057673e+00L,-3.5476249707880076e+00L,8.5212560572849194e-01L,
-                          0,0,0,0,0,
-                          0,0,0,0,0,
-                          0,
-                          0,
-                          5};
-
-// Discrete-Time Filter Function
-// this function must be called every 1ms.
-void implement_discrete_tf(steptraj_t *traj, float step, float *qd, float *qd_dot, float *qd_ddot) {
-    int i = 0;
-
-    traj->xk[0] = step;
-    traj->yk[0] = traj->b[0]*traj->xk[0];
-    for (i = 1;i<traj->size;i++) {
-        traj->yk[0] = traj->yk[0] + traj->b[i]*traj->xk[i] - traj->a[i]*traj->yk[i];
-    }
-
-    for (i = (traj->size-1);i>0;i--) {
-        traj->xk[i] = traj->xk[i-1];
-        traj->yk[i] = traj->yk[i-1];
-    }
-
-    *qd = traj->yk[0];
-    *qd_dot = (*qd - traj->qd_old)*1000;  //0.001 sample period
-    *qd_ddot = (*qd_dot - traj->qddot_old)*1000;
-
-    traj->qd_old = *qd;
-    traj->qddot_old = *qd_dot;
-
-}
-
-
-// to call this function create a variable that steps to the new positions you want to go to, pass this var to step
-// pass a reference to your qd variable your qd_dot variable and your qd_double_dot variable
-// for example
-//  implement_discrete_tf(&trajectory, mystep, &qd, &dot, &ddot);
 
 //
 // Main
@@ -194,16 +197,44 @@ void main(void)
 // This function is called every 1 ms
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
 
-    if ((mycount % 8000) < 4000) {
-        mystep = 0.25;
-        step = -.3;
-    } else {
-        mystep = 0.6;
-        step = 0;
-    }
 
-    implement_discrete_tf(&trajectory, step, &qd3, &dot3, &ddot3);
-    implement_discrete_tf(&trajectory2, mystep, &qd, &dot, &ddot);
+    // Rotation zxy and its Transpose
+    cosz = cos(thetaz);
+    sinz = sin(thetaz);
+    cosx = cos(thetax);
+    sinx = sin(thetax);
+    cosy = cos(thetay);
+    siny = sin(thetay);
+    RT11 = R11 = cosz*cosy-sinz*sinx*siny;
+    RT21 = R12 = -sinz*cosx;
+    RT31 = R13 = cosz*siny+sinz*sinx*cosy;
+    RT12 = R21 = sinz*cosy+cosz*sinx*siny;
+    RT22 = R22 = cosz*cosx;
+    RT32 = R23 = sinz*siny-cosz*sinx*cosy;
+    RT13 = R31 = -cosx*siny;
+    RT23 = R32 = sinx;
+    RT33 = R33 = cosx*cosy;
+    // Jacobian Transpose
+    cosq1 = cos(theta1motor);
+    sinq1 = sin(theta1motor);
+    cosq2 = cos(theta2motor);
+    sinq2 = sin(theta2motor);
+    cosq3 = cos(theta3motor);
+    sinq3 = sin(theta3motor);
+    JT_11 = -0.254*sinq1*(cosq3 + sinq2);
+    JT_12 = 0.254*cosq1*(cosq3 + sinq2);
+    JT_13 = 0;
+    JT_21 = 0.254*cosq1*(cosq2 - sinq3);
+    JT_22 = 0.254*sinq1*(cosq2 - sinq3);
+    JT_23 = -0.254*(cosq3 + sinq2);
+    JT_31 = -0.254*cosq1*sinq3;
+    JT_32 = -0.254*sinq1*sinq3;
+    JT_33 = -0.254*cosq3;
+
+    // Forward Kinematic
+    x_end = 0.254*cos(theta1motor)*(cos(theta3motor) + sin(theta2motor));
+    y_end = 0.254*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor));
+    z_end = 0.254*cos(theta2motor) - 0.254*sin(theta3motor) + 0.254;
 
     // Velocity Estimation
     Omega1_raw = (theta1motor - Theta1_old)/0.001;
@@ -215,28 +246,22 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Omega3_raw = (theta3motor - Theta3_old)/0.001;
     Omega3 = (Omega3_raw + Omega3_old1 + Omega3_old2)/3.0;
 
-    // Desired Postions, Velocities, Accelerations
-    theta1_desired = qd;
-    theta1_dot_desired = dot;
-    theta1_ddot_desired = ddot;
+    velx_raw = (x_end - x_end_old)/0.001;
+    velx = (velx_raw + velx_old1 + velx_old2)/3.0;
 
-    theta2_desired = qd;
-    theta2_dot_desired = dot;
-    theta2_ddot_desired = ddot;
+    vely_raw = (y_end - y_end_old)/0.001;
+    vely = (vely_raw + vely_old1 + vely_old2)/3.0;
 
-    theta3_desired = qd3;
-    theta3_dot_desired = dot3;
-    theta3_ddot_desired = ddot3;
-    
-    // Position Errors
-    error1 = theta1_desired - theta1motor;
-    error2 = theta2_desired - theta2motor;
-    error3 = theta3_desired - theta3motor;
+    velz_raw = (z_end - z_end_old)/0.001;
+    velz = (velz_raw + velz_old1 + velz_old2)/3.0;
 
-    // Velocity Errors, added
-    vel_error1 = theta1_dot_desired - Omega1;
-    vel_error2 = theta2_dot_desired - Omega2;
-    vel_error3 = theta3_dot_desired - Omega3;
+    Fxn = Kpxn*(RT11*(xd-x_end)+RT12*(yd-y_end)+RT13*(zd-z_end))+Kdxn*(RT11*(velxd-velx)+RT12*(velyd-vely)+RT13*(velzd-velz));
+    Fyn = Kpyn*(RT21*(xd-x_end)+RT22*(yd-y_end)+RT23*(zd-z_end))+Kdyn*(RT21*(velxd-velx)+RT22*(velyd-vely)+RT23*(velzd-velz));
+    Fzn = Kpzn*(RT31*(xd-x_end)+RT32*(yd-y_end)+RT33*(zd-z_end))+Kdzn*(RT31*(velxd-velx)+RT32*(velyd-vely)+RT33*(velzd-velz));
+
+    Fx = R11*Fxn + R12 * Fyn + R13 * Fzn;
+    Fy = R21*Fxn + R22 * Fyn + R23 * Fzn;
+    Fz = R31*Fxn + R32 * Fyn + R33 * Fzn;
 
     // Friction Compensation
     if (Omega1 > min_v1) {
@@ -263,53 +288,13 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
         u_fric3 = slope*Omega3;
     }
 
-    // Terms used the dynamics model
-    sintheta2 = sin(theta2motor);
-    costheta3 = cos(theta3motor);
-    sintheta32 = sin(theta3motor - theta2motor);
-    costheta32 = cos(theta3motor - theta2motor);
         
     // Control Laws
-    if (mode == 0) {
-        // PD + Feedforward Control
-        *tau1 = J1 * theta1_ddot_desired
-              + Kp1 * error1
-              + Kd1 * vel_error1
-              + u_fric1;
+    *tau1 = JT_11 * Fx + JT_12 * Fy + JT_13 * Fz + f_fric*u_fric1;
+    *tau2 = JT_21 * Fx + JT_22 * Fy + JT_23 * Fz + f_fric*u_fric2;
+    *tau3 = JT_31 * Fx + JT_32 * Fy + JT_33 * Fz + f_fric*u_fric3;
 
-        *tau2 = J2 * theta2_ddot_desired
-              + Kp2 * error2
-              + Kd2 * vel_error2
-              + u_fric2;
 
-        *tau3 = J3 * theta3_ddot_desired
-              + Kp3 * error3
-              + Kd3 * vel_error3
-              + u_fric3;
-
-    } else {
-        // InvIerse Dynamics Control
-        a_m2 = theta2_ddot_desired + Kp2i * error2 + Kd2i * vel_error2;
-        a_m3 = theta3_ddot_desired + Kp3i * error3 + Kd3i * vel_error3;
-
-        *tau1 = J1 * theta1_ddot_desired
-              + Kp1 * error1
-              + Kd1 * vel_error1
-              + u_fric1*0.6;
-
-        *tau2 = -p3 * costheta32 * Omega3 * Omega3
-              + a_m2 * p1
-              - GRAV * p4 * sintheta2
-              - a_m3 * p3 * sintheta32
-              + u_fric2 * 0.6;
-
-        *tau3 = p3 * costheta32 * Omega2 * Omega2
-              + a_m3 * p2
-              - GRAV * p5 * costheta3
-              - a_m2 * p3 * sintheta32
-              + u_fric3 * 0.6;
-    }
-    
     // Motor torque limitation(Max: 5 Min: -5)
     if (*tau1 > 5.0) *tau1 = 5.0;
     if (*tau1 < -5.0) *tau1 = -5.0;
@@ -331,7 +316,17 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     Omega3_old2 = Omega3_old1;
     Omega3_old1 = Omega3;
 
+    x_end_old = x_end;
+    velx_old2 = velx_old1;
+    velx_old1 = velx;
 
+    y_end_old = y_end;
+    vely_old2 = vely_old1;
+    vely_old1 = vely;
+
+    z_end_old = z_end;
+    velz_old2 = velz_old1;
+    velz_old1 = velz;
     // save past states
     if ((mycount%50)==0) {
 
@@ -369,9 +364,9 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     // cal_theta3motor = cal_theta3 + cal_theta2;
     
     // Simulink plotting
-    Simulink_PlotVar1 = theta1motor;
-    Simulink_PlotVar2 = theta2motor;
-    Simulink_PlotVar3 = theta3motor;
+    Simulink_PlotVar1 = qd;
+    Simulink_PlotVar2 = qd3;
+    Simulink_PlotVar3 = error3;
     Simulink_PlotVar4 = theta1_desired;
 
     mycount++;

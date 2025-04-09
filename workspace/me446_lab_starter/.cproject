@@ -83,8 +83,8 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Lab3GN.c|lab3_part3.c|lab3.c|lab2part7.c|lab2part6.c|melab2.c|me446lab_yer2_justin54.c|matlab|F28335.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="matlab/simulink5ms_plotAndGains_sldrt_win64/tlc"/>
+						<entry excluding="lab4_part4.c|lab4_part3.c|lab4_part2.c|lab4_part1.c|lab3_part4_old.c|Lab3GN.c|lab3_part3.c|lab3.c|lab2part7.c|lab2part6.c|melab2.c|me446lab_yer2_justin54.c|matlab|F28335.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

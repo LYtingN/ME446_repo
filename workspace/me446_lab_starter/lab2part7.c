@@ -102,7 +102,7 @@ void main(void)
 void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float *tau2,float *tau3, int error) {
 
 
-    time_trajectory = mycount/1000.0; // 0 to 2 seconds
+    time_trajectory = mycount/1000.0;
     if (time_trajectory < 1.0)
     {
         theta1_desired = 0;
