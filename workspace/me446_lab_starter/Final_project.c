@@ -142,7 +142,7 @@ float sinx = 0;
 float cosy = 0;
 float siny = 0;
 float thetaz = 0;
-float thetax = PI/4;
+float thetax = 0;
 float thetay = 0;
 float R11 = 0;
 float R12 = 0;
@@ -189,6 +189,109 @@ float t_total = 20;
 float dis_total = 0;
 float cycle_time = 0;
 float t_mod = 0;
+
+// get all the waypoints
+
+float t_relative = 0;
+
+typedef struct point_tag {
+    float x;
+    float y;
+    float z;
+    float thz;
+    int mode;
+} point;
+
+#define XYZSTIFF 1
+#define ZSTIFF 2
+#define XZSTIFF 3
+#define YZSTIFF 4
+#define XYSTIFF 5
+
+#define NUM_POINTS 23
+
+ point point_array[NUM_POINTS] = {
+
+    { 0.1651, 0.0000, 0.4318, 0, XYZSTIFF },  // point 0
+    { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF },  // point 0
+    { 0.2002, 0.2294, 0.4790, 0, XYZSTIFF },  // point 1
+    { 0.0408, 0.3507, 0.3048, 0, XYZSTIFF },  // point 2
+    { 0.0408, 0.3507, 0.1803, 0, XYZSTIFF },  // point 3 peg hole
+    { 0.0408, 0.3507, 0.1165, 0, ZSTIFF },    // point 4 weak peg hole
+    { 0.0408, 0.3507, 0.1803, 0, ZSTIFF },    // point 5 weak peg hole
+    { 0.0408, 0.3507, 0.3048, 0, XYZSTIFF },  // point 6 peg hole
+    { 0.2107, 0.1039, 0.37781, 0, XYZSTIFF },  // point 7 avoid obstacle
+    { 0.3756, 0.0996, 0.2150, 0, XYZSTIFF },  // point 8 avoid obstacle
+    { 0.3808, 0.0723, 0.2050, 0, XYZSTIFF },  // point 9 enter
+    { 0.4021, 0.0335, 0.2050, 0.6435, YZSTIFF }, // point 10 arrive at 1st point
+    { 0.3865, 0.0368, 0.2050, 0, ZSTIFF }, // point 11 arrive at 2nd point
+    { 0.3163, 0.0460, 0.2050, 1.3089, YZSTIFF }, // point 12 arrive at 3nd point
+    { 0.3174, 0.0241, 0.2050, 0, ZSTIFF }, // point 13 arrive at 4nd point
+    { 0.3751, -0.0502, 0.2050, 0.6435, YZSTIFF }, // point 14 arrive at 4nd point
+    { 0.3751, -0.0502, 0.3080, 0, XYZSTIFF }, // point 15 out
+    { 0.2013,0.1799,0.3319, 0, XYZSTIFF }, // point 16 egg
+    { 0.2013,0.1799,0.2784, 0, XYZSTIFF },// point 17 press egg
+//    { 0.2013,0.1799,0.2784, 0, XYZSTIFF },// point 18 press egg
+//    { 0.2013,0.1799,0.2784, 0, XYZSTIFF },// point 19 press egg
+    { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF },  // point 20
+    { 0.1651, 0.0000, 0.4318, 0, XYZSTIFF },  // point 20
+};
+// point_array[12].thz = PI / 2;
+
+ #define SPEED_INCH_PER_SEC 0.1f
+
+int current_index = 0;
+int segment_start_time = 0;
+float xd, yd, zd, thz_d;
+int stiffness_mode = XYZSTIFF;
+float tha = 0;
+float thetaz_d = 0;
+
+void update_trajectory(int mycount) {
+     if (current_index >= NUM_POINTS - 1) {
+         return;
+     }
+
+     point start = point_array[current_index];
+     point end = point_array[current_index + 1];
+
+     xa = start.x;
+     ya = start.y;
+     za = start.z;
+     thetaz = start.thz;
+
+
+     float dx = end.x - xa;
+     float dy = end.y - ya;
+     float dz = end.z - za;
+     float dth = end.thz - thetaz;
+     float dist = sqrt(dx * dx + dy * dy + dz * dz);
+     float total_time = dist / SPEED_INCH_PER_SEC;
+
+     float t_relative = (mycount - segment_start_time) * 0.001f;
+     float ratio = t_relative / total_time;
+     velxd = dx;
+     velyd = dy;
+     velzd = dz;
+     if (ratio >= 1.0f) {
+         current_index++;
+         segment_start_time = mycount;
+
+         xd = end.x;
+         yd = end.y;
+         zd = end.z;
+         thetaz_d = end.thz;
+         stiffness_mode = end.mode;
+     } else {
+         xd = xa + dx * ratio;
+         yd = ya + dy * ratio;
+         zd = za + dz * ratio;
+         thetaz_d = thetaz + dth * ratio;
+         stiffness_mode = end.mode;
+     }
+ }
+
+
 
 void mains_code(void);
 
@@ -240,40 +343,34 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
     JT_32 = -0.254*sinq1*sinq3;
     JT_33 = -0.254*cosq3;
 
-    t = mycount/1000.0;
-
-    delta_x = xb-xa;
-    delta_y = yb-ya;
-    delta_z = zb-za;
-
-    dis_total = sqrt(delta_x * delta_x+delta_y * delta_y+delta_z * delta_z);
-    t_total  = dis_total/0.1;
-    cycle_time = 2*t_total;
-    t_mod = fmod(t, cycle_time);
-    if (t_mod <=  t_total) {
-        float ratio = t_mod / t_total;
-        xd = delta_x * ratio + xa;
-        yd = delta_y * ratio + ya;
-        zd = delta_z * ratio + za;
+    if (stiffness_mode == 1)
+    {
+        Kpxn = 500, Kpyn = 500, Kpzn = 500;
+        Kdxn = 40, Kdyn = 40, Kdzn = 40;
+    } else if (stiffness_mode == 2)
+    {
+        Kpxn = 300, Kpyn = 300, Kpzn = 500;
+        Kdxn = 20, Kdyn = 20, Kdzn = 40;
+    }else if (stiffness_mode == 3)
+    {
+        Kpxn = 500, Kpyn = 300, Kpzn = 500;
+        Kdxn = 40, Kdyn = 20, Kdzn = 40;
+    }else if (stiffness_mode == 4)
+    {
+        Kpxn = 100, Kpyn = 500, Kpzn = 500;
+        Kdxn = 10, Kdyn = 40, Kdzn = 40;
+    }else if (stiffness_mode == 5)
+    {
+        Kpxn = 500, Kpyn = 500, Kpzn = 200;
+        Kdxn = 40, Kdyn = 40, Kdzn = 15;
     }
 
-    else {
-        float ratio = (t_mod -  t_total) /  t_total;
-        xd = delta_x * (1 - ratio) + xa;
-        yd = delta_y * (1 - ratio) + ya;
-        zd = delta_z * (1 - ratio) + za;
-    }
-//    xd = delta_x * (t / t_total) + xa;
-//    yd = delta_y * (t / t_total) + ya;
-//    zd = delta_z * (t / t_total) + za;
-    velxd = delta_x;
-    velyd = delta_y;
-    velzd = delta_z;
+
     // Forward Kinematic
     x_end = 0.254*cos(theta1motor)*(cos(theta3motor) + sin(theta2motor));
     y_end = 0.254*sin(theta1motor)*(cos(theta3motor) + sin(theta2motor));
     z_end = 0.254*cos(theta2motor) - 0.254*sin(theta3motor) + 0.254;
-
+    update_trajectory(mycount);
     // Velocity Estimation
     Omega1_raw = (theta1motor - Theta1_old)/0.001;
     Omega1 = (Omega1_raw + Omega1_old1 + Omega1_old2)/3.0;
@@ -412,7 +509,7 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
 void printing(void){
     if (whattoprint == 0) {
-        serial_printf(&SerialA, "printmotor: %.2f,%.2f,%.2f, position: %.2f,%.2f,%.2f, \n\r cal_motor %.2f,%.2f,%.2f, dh_motor %.2f,%.2f,%.2f \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI,x_end,y_end,z_end,cal_theta1motor*180/PI,cal_theta2motor*180/PI,cal_theta3motor*180/PI,cal_theta1*180/PI,cal_theta2*180/PI,cal_theta3*180/PI);
+        serial_printf(&SerialA, "printmotor: %.3f,%.3f,%.3f, position: %.4f,%.4f,%.4f, \n\r cal_motor %.2f,%.2f,%.2f, dh_motor %.2f,%.2f,%.2f \n\r",printtheta1motor*180/PI,printtheta2motor*180/PI,printtheta3motor*180/PI,x_end,y_end,z_end,cal_theta1motor*180/PI,cal_theta2motor*180/PI,cal_theta3motor*180/PI,cal_theta1*180/PI,cal_theta2*180/PI,cal_theta3*180/PI);
     } else {
         serial_printf(&SerialA, "whattoprintout   \n\r");
     }
