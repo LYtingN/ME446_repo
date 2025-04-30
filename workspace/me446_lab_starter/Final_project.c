@@ -194,12 +194,111 @@ float t_mod = 0;
 
 float t_relative = 0;
 
+//typedef struct point_tag {
+//    float x;
+//    float y;
+//    float z;
+//    float thz;
+//    int mode;
+//} point;
+//
+//#define XYZSTIFF 1
+//#define ZSTIFF 2
+//#define XZSTIFF 3
+//#define YZSTIFF 4
+//#define XYSTIFF 5
+//
+//#define NUM_POINTS 23
+//
+// point point_array[NUM_POINTS] = {
+//
+//    { 0.1651, 0.0000, 0.4318, 0, XYZSTIFF },  // point 0
+//    { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF },  // point 0
+//    { 0.2002, 0.2294, 0.4790, 0, XYZSTIFF },  // point 1
+//    { 0.0408, 0.3507, 0.3048, 0, XYZSTIFF },  // point 2
+//    { 0.0408, 0.3507, 0.1803, 0, XYZSTIFF },  // point 3 peg hole
+//    { 0.0408, 0.3507, 0.1165, 0, ZSTIFF },    // point 4 weak peg hole
+//    { 0.0408, 0.3507, 0.1803, 0, ZSTIFF },    // point 5 weak peg hole
+//    { 0.0408, 0.3507, 0.3048, 0, XYZSTIFF },  // point 6 peg hole
+//    { 0.2107, 0.1039, 0.37781, 0, XYZSTIFF },  // point 7 avoid obstacle
+//    { 0.3756, 0.0996, 0.2150, 0, XYZSTIFF },  // point 8 avoid obstacle
+//    { 0.3808, 0.0723, 0.2050, 0, XYZSTIFF },  // point 9 enter
+//    { 0.4021, 0.0335, 0.2050, 0.6435, YZSTIFF }, // point 10 arrive at 1st point
+//    { 0.3865, 0.0368, 0.2050, 0, ZSTIFF }, // point 11 arrive at 2nd point
+//    { 0.3163, 0.0460, 0.2050, 1.3089, YZSTIFF }, // point 12 arrive at 3nd point
+//    { 0.3174, 0.0241, 0.2050, 0, ZSTIFF }, // point 13 arrive at 4nd point
+//    { 0.3751, -0.0502, 0.2050, 0.6435, YZSTIFF }, // point 14 arrive at 4nd point
+//    { 0.3751, -0.0502, 0.3080, 0, XYZSTIFF }, // point 15 out
+//    { 0.2013,0.1799,0.3319, 0, XYZSTIFF }, // point 16 egg
+//    { 0.2013,0.1799,0.2784, 0, XYZSTIFF },// point 17 press egg
+////    { 0.2013,0.1799,0.2784, 0, XYZSTIFF },// point 18 press egg
+////    { 0.2013,0.1799,0.2784, 0, XYZSTIFF },// point 19 press egg
+//    { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF },  // point 20
+//    { 0.1651, 0.0000, 0.4318, 0, XYZSTIFF },  // point 20
+//};
+//// point_array[12].thz = PI / 2;
+//
+// #define SPEED_INCH_PER_SEC 0.1f
+//
+//int current_index = 0;
+//int segment_start_time = 0;
+//float xd, yd, zd, thz_d;
+//int stiffness_mode = XYZSTIFF;
+//float tha = 0;
+//float thetaz_d = 0;
+//
+//void update_trajectory(int mycount) {
+//     if (current_index >= NUM_POINTS - 1) {
+//         return;
+//     }
+//
+//     point start = point_array[current_index];
+//     point end = point_array[current_index + 1];
+//
+//     xa = start.x;
+//     ya = start.y;
+//     za = start.z;
+//     thetaz = start.thz;
+//
+//
+//     float dx = end.x - xa;
+//     float dy = end.y - ya;
+//     float dz = end.z - za;
+//     float dth = end.thz - thetaz;
+//     float dist = sqrt(dx * dx + dy * dy + dz * dz);
+//     float total_time = dist / SPEED_INCH_PER_SEC;
+//
+//     float t_relative = (mycount - segment_start_time) * 0.001f;
+//     float ratio = t_relative / total_time;
+//     velxd = dx;
+//     velyd = dy;
+//     velzd = dz;
+//     if (ratio >= 1.0f) {
+//         current_index++;
+//         segment_start_time = mycount;
+//
+//         xd = end.x;
+//         yd = end.y;
+//         zd = end.z;
+//         thetaz_d = end.thz;
+//         stiffness_mode = end.mode;
+//     } else {
+//         xd = xa + dx * ratio;
+//         yd = ya + dy * ratio;
+//         zd = za + dz * ratio;
+//         thetaz_d = thetaz + dth * ratio;
+//         stiffness_mode = end.mode;
+//     }
+// }
+
 typedef struct point_tag {
     float x;
     float y;
     float z;
     float thz;
     int mode;
+    uint16_t dwell_ms;
+    float speed;
 } point;
 
 #define XYZSTIFF 1
@@ -208,33 +307,35 @@ typedef struct point_tag {
 #define YZSTIFF 4
 #define XYSTIFF 5
 
-#define NUM_POINTS 23
+#define NUM_POINTS 24
 
  point point_array[NUM_POINTS] = {
 
     { 0.1651, 0.0000, 0.4318, 0, XYZSTIFF },  // point 0
-    { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF },  // point 0
-    { 0.2002, 0.2294, 0.4790, 0, XYZSTIFF },  // point 1
-    { 0.0408, 0.3507, 0.3048, 0, XYZSTIFF },  // point 2
-    { 0.0408, 0.3507, 0.1803, 0, XYZSTIFF },  // point 3 peg hole
-    { 0.0408, 0.3507, 0.1165, 0, ZSTIFF },    // point 4 weak peg hole
-    { 0.0408, 0.3507, 0.1803, 0, ZSTIFF },    // point 5 weak peg hole
-    { 0.0408, 0.3507, 0.3048, 0, XYZSTIFF },  // point 6 peg hole
-    { 0.2107, 0.1039, 0.37781, 0, XYZSTIFF },  // point 7 avoid obstacle
-    { 0.3756, 0.0996, 0.2150, 0, XYZSTIFF },  // point 8 avoid obstacle
-    { 0.3808, 0.0723, 0.2050, 0, XYZSTIFF },  // point 9 enter
-    { 0.4021, 0.0335, 0.2050, 0.6435, YZSTIFF }, // point 10 arrive at 1st point
-    { 0.3865, 0.0368, 0.2050, 0, ZSTIFF }, // point 11 arrive at 2nd point
-    { 0.3163, 0.0460, 0.2050, 1.3089, YZSTIFF }, // point 12 arrive at 3nd point
-    { 0.3174, 0.0241, 0.2050, 0, ZSTIFF }, // point 13 arrive at 4nd point
-    { 0.3751, -0.0502, 0.2050, 0.6435, YZSTIFF }, // point 14 arrive at 4nd point
-    { 0.3751, -0.0502, 0.3080, 0, XYZSTIFF }, // point 15 out
-    { 0.2013,0.1799,0.3319, 0, XYZSTIFF }, // point 16 egg
-    { 0.2013,0.1799,0.2784, 0, XYZSTIFF },// point 17 press egg
-//    { 0.2013,0.1799,0.2784, 0, XYZSTIFF },// point 18 press egg
-//    { 0.2013,0.1799,0.2784, 0, XYZSTIFF },// point 19 press egg
-    { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF },  // point 20
-    { 0.1651, 0.0000, 0.4318, 0, XYZSTIFF },  // point 20
+    { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF,0,0.5f },  // point 0
+    { 0.2002, 0.2294, 0.4790, 0, XYZSTIFF,0,0.5f },  // point 1
+    { 0.0352,0.3495, 0.3048, 0, XYZSTIFF,0,0.5f },  // point 2
+    { 0.0365,0.3505, 0.1803, 0, XYZSTIFF },  // point 3 peg hole
+    { 0.0365,0.3505, 0.1303, 0, XYZSTIFF },  // point 3 peg hole
+    { 0.0365,0.3505, 0.1110, 0, XYZSTIFF,1000},    // point 4 weak peg hole
+    { 0.0352,0.3495, 0.1200, 0, ZSTIFF,0,0.5f },    // point 4 weak peg hole
+    { 0.0352,0.3495, 0.1803, 0, ZSTIFF,0,0.5f },    // point 5 weak peg hole
+    { 0.0352,0.3495, 0.3048, 0, XYZSTIFF,0,0.5f },  // point 6 peg hole
+    { 0.2107, 0.1039, 0.3778, 0, XYZSTIFF,0,0.5f },  // point 7 avoid obstacle
+    { 0.3756, 0.0996, 0.2200, 0, XYZSTIFF,0,0.2f },  // point 8 avoid obstacle
+    { 0.3808, 0.0723, 0.2050, 0, XYZSTIFF,0,0.2f },  // point 9 enter
+    { 0.4021, 0.0446, 0.2050, 0.6435, YZSTIFF,0,0.0f }, // point 10 arrive at 1st point
+    { 0.3870, 0.0375, 0.2050, 0, ZSTIFF,0,0.0f }, // point 11 arrive at 2nd point
+    { 0.3190, 0.0422, 0.2050, 1.3089, YZSTIFF,0,0.0f }, // point 12 arrive at 3nd point
+    { 0.3174, 0.0426, 0.2050, 0, ZSTIFF,0,0.0f }, // point 13 arrive at 4nd point/ second curve mid
+    { 0.3117,0.0262, 0.2050, 0, ZSTIFF,0,0.0f }, //second point arrive at 4nd point/ second curve mid
+    { 0.3751, -0.0502, 0.2050, 0.6435, YZSTIFF,0,0.0f }, // point 14 arrive at 5nd point
+    { 0.3751, -0.0502, 0.3080, 0, XYZSTIFF,0,0.5f }, // point 15 out
+    { 0.2037,0.1709,0.3319, 0, XYZSTIFF,0,0.5f }, // point 16 egg
+    { 0.2037,0.1709,0.2839, 0, XYSTIFF, 2000,0.05f},// point 17 press egg
+    { 0.2037,0.1709,0.2900, 0, XYZSTIFF,0,0.5f},// point 17 press egg
+    { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF,0,0.5f },  // point 20
+//    { 0.1651, 0.0000, 0.4318, 0, XYZSTIFF },  // point 20
 };
 // point_array[12].thz = PI / 2;
 
@@ -246,50 +347,67 @@ float xd, yd, zd, thz_d;
 int stiffness_mode = XYZSTIFF;
 float tha = 0;
 float thetaz_d = 0;
-
-void update_trajectory(int mycount) {
-     if (current_index >= NUM_POINTS - 1) {
-         return;
-     }
-
-     point start = point_array[current_index];
-     point end = point_array[current_index + 1];
-
-     xa = start.x;
-     ya = start.y;
-     za = start.z;
-     thetaz = start.thz;
+static bool in_hold = false;
 
 
-     float dx = end.x - xa;
-     float dy = end.y - ya;
-     float dz = end.z - za;
-     float dth = end.thz - thetaz;
-     float dist = sqrt(dx * dx + dy * dy + dz * dz);
-     float total_time = dist / SPEED_INCH_PER_SEC;
+void update_trajectory(int mycount)
+{
+    if (current_index >= NUM_POINTS - 1) return;
 
-     float t_relative = (mycount - segment_start_time) * 0.001f;
-     float ratio = t_relative / total_time;
-     velxd = dx;
-     velyd = dy;
-     velzd = dz;
-     if (ratio >= 1.0f) {
-         current_index++;
-         segment_start_time = mycount;
+    point start = point_array[current_index];
+    point end   = point_array[current_index + 1];
 
-         xd = end.x;
-         yd = end.y;
-         zd = end.z;
-         thetaz_d = end.thz;
-         stiffness_mode = end.mode;
-     } else {
-         xd = xa + dx * ratio;
-         yd = ya + dy * ratio;
-         zd = za + dz * ratio;
-         thetaz_d = thetaz + dth * ratio;
-         stiffness_mode = end.mode;
-     }
- }
+
+    float xa = start.x, ya = start.y, za = start.z, thetaz = start.thz;
+
+    float dx = end.x - xa;
+    float dy = end.y - ya;
+    float dz = end.z - za;
+    float dth = end.thz - thetaz;
+    float dist = sqrtf(dx*dx + dy*dy + dz*dz);
+    float seg_speed = (end.speed > 0.f) ? end.speed : SPEED_INCH_PER_SEC;
+    float total_time;
+
+    if (dist <= 1e-2f) {
+        total_time = start.dwell_ms * 0.001f;
+        in_hold    = true;
+    } else {
+        total_time = dist / seg_speed;
+        in_hold    = false;
+    }
+    if (total_time <= 0.f) total_time = 0.001f;
+
+
+    float t_relative = (mycount - segment_start_time) * 0.001f;
+    float ratio = t_relative / total_time;
+
+    if (ratio >= 1.0f) {
+        current_index++;
+        segment_start_time = mycount;
+
+        xd = end.x;  yd = end.y;  zd = end.z;
+        thetaz_d = end.thz;
+        stiffness_mode = end.mode;
+        return;
+    }
+
+    if (in_hold) {
+
+        xd = xa;  yd = ya;  zd = za;
+        thetaz_d = thetaz;
+        velxd = velyd = velzd = 0.f;
+    } else {
+        xd = xa + dx * ratio;
+        yd = ya + dy * ratio;
+        zd = za + dz * ratio;
+        thetaz_d = thetaz + dth * ratio;
+        stiffness_mode = end.mode;
+        velxd = dx / total_time;
+        velyd = dy / total_time;
+        velzd = dz / total_time;
+    }
+}
+
 
 
 
