@@ -307,7 +307,7 @@ typedef struct point_tag {
 #define YZSTIFF 4
 #define XYSTIFF 5
 
-#define NUM_POINTS 24
+#define NUM_POINTS 25
 
  point point_array[NUM_POINTS] = {
 
@@ -331,9 +331,10 @@ typedef struct point_tag {
     { 0.3117,0.0262, 0.2050, 0, ZSTIFF,0,0.0f }, //second point arrive at 4nd point/ second curve mid
     { 0.3751, -0.0502, 0.2050, 0.6435, YZSTIFF,0,0.0f }, // point 14 arrive at 5nd point
     { 0.3751, -0.0502, 0.3080, 0, XYZSTIFF,0,0.5f }, // point 15 out
-    { 0.2037,0.1709,0.3319, 0, XYZSTIFF,0,0.5f }, // point 16 egg
-    { 0.2037,0.1709,0.2839, 0, XYSTIFF, 2000,0.05f},// point 17 press egg
-    { 0.2037,0.1709,0.2900, 0, XYZSTIFF,0,0.5f},// point 17 press egg
+    { 0.2102,0.1832,0.3200, 0, XYZSTIFF,0,0.5f }, // point 16 egg
+    { 0.2102,0.1832,0.2818, 0, XYZSTIFF, 2000,0.02f},// point 17 press egg
+    { 0.2102,0.1832,0.2900, 0, XYZSTIFF,0,0.02f},// point 17 press egg
+    { 0.2102,0.1832,0.3200, 0, XYZSTIFF,0,0.02f},// point 17 press egg
     { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF,0,0.5f },  // point 20
 //    { 0.1651, 0.0000, 0.4318, 0, XYZSTIFF },  // point 20
 };
@@ -463,8 +464,8 @@ void lab(float theta1motor,float theta2motor,float theta3motor,float *tau1,float
 
     if (stiffness_mode == 1)
     {
-        Kpxn = 500, Kpyn = 500, Kpzn = 500;
-        Kdxn = 40, Kdyn = 40, Kdzn = 40;
+        Kpxn = 500, Kpyn = 500, Kpzn = 600;
+        Kdxn = 40, Kdyn = 40, Kdzn = 50;
     } else if (stiffness_mode == 2)
     {
         Kpxn = 300, Kpyn = 300, Kpzn = 500;
