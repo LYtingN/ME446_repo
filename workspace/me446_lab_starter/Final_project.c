@@ -332,8 +332,8 @@ typedef struct point_tag {
     { 0.3751, -0.0502, 0.2050, 0.6435, YZSTIFF,0,0.0f }, // point 14 arrive at 5nd point
     { 0.3751, -0.0502, 0.3080, 0, XYZSTIFF,0,0.5f }, // point 15 out
     { 0.2102,0.1832,0.3200, 0, XYZSTIFF,0,0.5f }, // point 16 egg
-    { 0.2102,0.1832,0.2818, 0, XYZSTIFF, 2000,0.02f},// point 17 press egg
-    { 0.2102,0.1832,0.2900, 0, XYZSTIFF,0,0.02f},// point 17 press egg
+    { 0.2102,0.1832,0.2755, 0, XYZSTIFF, 2000,0.02f},// point 17 press egg
+    { 0.2102,0.1832,0.2800, 0, XYZSTIFF,0,0.02f},// point 17 press egg
     { 0.2102,0.1832,0.3200, 0, XYZSTIFF,0,0.02f},// point 17 press egg
     { 0.2540, 0.0000, 0.5080, 0, XYZSTIFF,0,0.5f },  // point 20
 //    { 0.1651, 0.0000, 0.4318, 0, XYZSTIFF },  // point 20
